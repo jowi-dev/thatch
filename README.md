@@ -51,6 +51,46 @@ thatch setup --claude --global  # or --cursor --global
 Restart your editor and thatch's tools are available as `mcp__thatch__*`.
 Requires [Bun] on PATH.
 
+### NixOS / Nix
+
+This repo is a flake. Bun and the native embedding runtime are bundled, so no
+global `npm install` or `bun` on PATH is required.
+
+Try it without installing:
+
+```bash
+nix run github:sysread/thatch -- --version
+```
+
+Install system-wide via the NixOS module (in your flake `configuration.nix`):
+
+```nix
+{
+  inputs.thatch.url = "github:sysread/thatch";
+
+  # in your NixOS system's modules:
+  imports = [ thatch.nixosModules.default ];
+  programs.thatch.enable = true;   # puts `thatch` on PATH for every user
+}
+```
+
+Or add the package yourself with the overlay
+(`nixpkgs.overlays = [ thatch.overlays.default ];` then
+`environment.systemPackages = [ pkgs.thatch ];`), or drop
+`thatch.packages.${system}.default` into a `home.packages` /
+`environment.systemPackages` list directly.
+
+Once `thatch` is on PATH, wire it into your editor as usual:
+
+```bash
+cd /path/to/your/project
+thatch setup --claude --global   # or --cursor
+```
+
+The embedding model still downloads once at first use; it is cached under
+`$XDG_CACHE_HOME/thatch/models` (override with `THATCH_MODEL_CACHE`) so it
+survives upgrades and works from the read-only Nix store.
+
 ### Other MCP-compatible harnesses
 
 ```json
@@ -109,6 +149,9 @@ and is cached. No data leaves your machine.
 bun install
 mise run check     # typecheck + bun test + markdownlint (the CI gate)
 ```
+
+On Nix, `nix develop` drops you into a shell with bun, mise, and node already
+on PATH -- no system install needed.
 
 Tests never reach outside the sandbox: temp-directory SQLite files, mock
 embeddings, no network.
