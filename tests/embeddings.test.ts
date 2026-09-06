@@ -1,6 +1,8 @@
 import { describe, test, expect } from "bun:test";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { MockEmbeddingModel } from "./mocks/embeddings";
-import { BgeEmbeddingModel, type PipelineFactory } from "../src/embeddings";
+import { BgeEmbeddingModel, modelCacheDir, type PipelineFactory } from "../src/embeddings";
 
 describe("MockEmbeddingModel", () => {
   test("reports dims correctly", () => {
@@ -61,6 +63,56 @@ describe("MockEmbeddingModel", () => {
   test("exposes a model name for the stored tag", () => {
     const model = new MockEmbeddingModel();
     expect(model.name).toBe("mock");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// modelCacheDir
+// ---------------------------------------------------------------------------
+
+describe("modelCacheDir", () => {
+  const KEYS = ["THATCH_MODEL_CACHE", "XDG_CACHE_HOME"] as const;
+  const saved: Record<string, string | undefined> = {};
+
+  function isolate(fn: () => void) {
+    for (const k of KEYS) {
+      saved[k] = process.env[k];
+      delete process.env[k];
+    }
+    try {
+      fn();
+    } finally {
+      for (const k of KEYS) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k];
+      }
+    }
+  }
+
+  test("prefers THATCH_MODEL_CACHE when set", () => {
+    isolate(() => {
+      process.env.THATCH_MODEL_CACHE = "/tmp/custom-models";
+      expect(modelCacheDir()).toBe("/tmp/custom-models");
+    });
+  });
+
+  test("falls back to XDG_CACHE_HOME/thatch/models", () => {
+    isolate(() => {
+      process.env.XDG_CACHE_HOME = "/tmp/xdg";
+      expect(modelCacheDir()).toBe(join("/tmp/xdg", "thatch", "models"));
+    });
+  });
+
+  test("falls back to ~/.cache/thatch/models by default", () => {
+    isolate(() => {
+      expect(modelCacheDir()).toBe(join(homedir(), ".cache", "thatch", "models"));
+    });
+  });
+
+  test("never points inside the read-only node_modules tree", () => {
+    isolate(() => {
+      expect(modelCacheDir()).not.toContain("node_modules");
+    });
   });
 });
 
