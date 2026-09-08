@@ -9,8 +9,8 @@
   depsHash ? {
     x86_64-linux = "sha256-37uHLZYLfniOM1w6nQvfNadGCks9hJ+pmeVM13V0Wvg=";
     aarch64-linux = lib.fakeHash;
-    x86_64-darwin = "sha256-sP5xzzyuAWHH4ZBdmQ2aEJBaRJDMqSRLiHTULd7Dr/c=";
-    aarch64-darwin = lib.fakeHash;
+    x86_64-darwin = lib.fakeHash;
+    aarch64-darwin = "sha256-sP5xzzyuAWHH4ZBdmQ2aEJBaRJDMqSRLiHTULd7Dr/c=";
   },
 }:
 
